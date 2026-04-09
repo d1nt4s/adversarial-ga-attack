@@ -31,3 +31,7 @@ results/raw/
 
 # VS Code
 .vscode/
+
+# Personal notes
+notes/
+*.delete
