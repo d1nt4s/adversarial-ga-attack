@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+venv/
+env/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data (too large for git)
+data/cifar-10-batches-py/
+data/cifar-10-python.tar.gz
+data/*.tar.gz
+data/*.zip
+
+# Results - keep figures, ignore raw dumps
+results/raw/
+
+# Models (too large)
+*.pth
+*.pt
+*.h5
+*.pkl
+
+# Mac
+.DS_Store
+
+# VS Code
+.vscode/
