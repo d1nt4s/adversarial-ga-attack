@@ -7,6 +7,12 @@ import torch
 import torch.nn as nn
 import numpy as np
 
+# CIFAR-10 normalization bounds: valid pixel range [0,1] mapped to normalized space
+CIFAR_MEAN = torch.tensor([0.4914, 0.4822, 0.4465]).view(3, 1, 1)
+CIFAR_STD  = torch.tensor([0.2023, 0.1994, 0.2010]).view(3, 1, 1)
+NORM_MIN = ((torch.zeros(3, 1, 1) - CIFAR_MEAN) / CIFAR_STD)  # normalized 0
+NORM_MAX = ((torch.ones(3, 1, 1)  - CIFAR_MEAN) / CIFAR_STD)  # normalized 1
+
 
 def fgsm_attack(model, image, label, epsilon=0.1):
     """
@@ -15,6 +21,9 @@ def fgsm_attack(model, image, label, epsilon=0.1):
 
     Returns: adversarial image (tensor)
     """
+    norm_min = NORM_MIN.to(image.device)
+    norm_max = NORM_MAX.to(image.device)
+
     image = image.clone().detach().requires_grad_(True)
     output = model(image)
     loss = nn.CrossEntropyLoss()(output, label)
@@ -22,7 +31,7 @@ def fgsm_attack(model, image, label, epsilon=0.1):
     loss.backward()
 
     perturbation = epsilon * image.grad.sign()
-    adv_image = torch.clamp(image + perturbation, 0, 1).detach()
+    adv_image = torch.max(torch.min(image + perturbation, norm_max), norm_min).detach()
     return adv_image
 
 
@@ -33,9 +42,12 @@ def pgd_attack(model, image, label, epsilon=0.1, alpha=0.01, steps=40):
 
     Returns: adversarial image (tensor)
     """
+    norm_min = NORM_MIN.to(image.device)
+    norm_max = NORM_MAX.to(image.device)
+
     adv_image = image.clone().detach()
     adv_image = adv_image + torch.empty_like(adv_image).uniform_(-epsilon, epsilon)
-    adv_image = torch.clamp(adv_image, 0, 1).detach()
+    adv_image = torch.max(torch.min(adv_image, norm_max), norm_min).detach()
 
     for _ in range(steps):
         adv_image.requires_grad_(True)
@@ -46,7 +58,7 @@ def pgd_attack(model, image, label, epsilon=0.1, alpha=0.01, steps=40):
 
         adv_image = adv_image + alpha * adv_image.grad.sign()
         delta = torch.clamp(adv_image - image, -epsilon, epsilon)
-        adv_image = torch.clamp(image + delta, 0, 1).detach()
+        adv_image = torch.max(torch.min(image + delta, norm_max), norm_min).detach()
 
     return adv_image
 

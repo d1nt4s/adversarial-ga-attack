@@ -5,6 +5,12 @@ No access to model weights or gradients — only input/output queries.
 
 import numpy as np
 
+# CIFAR-10 нормализованные границы пикселей [0,1] → нормализованное пространство
+_MEAN = np.array([0.4914, 0.4822, 0.4465]).reshape(3, 1, 1)
+_STD  = np.array([0.2023, 0.1994, 0.2010]).reshape(3, 1, 1)
+NORM_MIN = (0 - _MEAN) / _STD
+NORM_MAX = (1 - _MEAN) / _STD
+
 
 class GeneticAttack:
     def __init__(
@@ -46,7 +52,7 @@ class GeneticAttack:
 
         scores = []
         for p in perturbations:
-            adv = np.clip(image + p, 0, 1)
+            adv = np.clip(image + p, NORM_MIN, NORM_MAX)
             adv_tensor = torch.FloatTensor(adv).unsqueeze(0).to(self.device)
 
             with torch.no_grad():
