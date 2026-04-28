@@ -45,8 +45,8 @@ class GeneticAttack:
 
     def _fitness(self, image, perturbations, true_label):
         """
-        Fitness = attack success / perturbation size.
-        Higher is better.
+        Fitness = prob(best_wrong_class) - prob(true_class).
+        Непрерывный сигнал: GA учится даже когда атака ещё не удалась.
         """
         import torch
 
@@ -56,14 +56,13 @@ class GeneticAttack:
             adv_tensor = torch.FloatTensor(adv).unsqueeze(0).to(self.device)
 
             with torch.no_grad():
-                output = self.model(adv_tensor)
-                pred = output.argmax(dim=1).item()
-                confidence = torch.softmax(output, dim=1).max().item()
+                probs = torch.softmax(self.model(adv_tensor), dim=1)[0]
 
-            attack_success = 1.0 if pred != true_label else 0.0
-            perturbation_norm = np.linalg.norm(p) + 1e-8
+            prob_true = probs[true_label].item()
+            probs[true_label] = 0.0
+            prob_best_wrong = probs.max().item()
 
-            scores.append(attack_success * confidence / perturbation_norm)
+            scores.append(prob_best_wrong - prob_true)
 
         return np.array(scores)
 
